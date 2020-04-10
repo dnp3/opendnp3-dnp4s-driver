@@ -159,6 +159,46 @@ class QueuedCommandHandler(val app: CustomOutstationApplication, val binaryOutpu
           CommandStatus.SUCCESS
         }
         else CommandStatus.FORMAT_ERROR
+      case 5 =>
+        if(crob.function == ControlCode.PULSE_ON &&
+          crob.count == 25 &&
+          crob.onTimeMs == 1100 &&
+          crob.offTimeMs == 1200) {
+          CommandStatus.SUCCESS
+        }
+        else CommandStatus.FORMAT_ERROR
+      case 6 =>
+        if(crob.function == ControlCode.LATCH_ON &&
+          crob.count == 30 &&
+          crob.onTimeMs == 1300 &&
+          crob.offTimeMs == 1400) {
+          CommandStatus.SUCCESS
+        }
+        else CommandStatus.FORMAT_ERROR
+      case 7 =>
+        if(crob.function == ControlCode.LATCH_OFF &&
+          crob.count == 35 &&
+          crob.onTimeMs == 1500 &&
+          crob.offTimeMs == 1600) {
+          CommandStatus.SUCCESS
+        }
+        else CommandStatus.FORMAT_ERROR
+      case 8 =>
+        if(crob.function == ControlCode.CLOSE_PULSE_ON &&
+          crob.count == 40 &&
+          crob.onTimeMs == 1700 &&
+          crob.offTimeMs == 1800) {
+          CommandStatus.SUCCESS
+        }
+        else CommandStatus.FORMAT_ERROR
+      case 9 =>
+        if(crob.function == ControlCode.TRIP_PULSE_ON &&
+          crob.count == 45 &&
+          crob.onTimeMs == 1900 &&
+          crob.offTimeMs == 2000) {
+          CommandStatus.SUCCESS
+        }
+        else CommandStatus.FORMAT_ERROR
       case i if i >= 10 && i <= 19 =>
         if(crob.function == ControlCode.LATCH_ON &&
           crob.count == 1 &&
