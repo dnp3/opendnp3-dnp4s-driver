@@ -21,6 +21,8 @@ class OpenDNP3IntegrationPlugin extends IntegrationPlugin {
   private var config = StackConfig.Default
   private var eventBatch = 0
 
+  override val delayUnsolicitedValidations = false
+
   override def startProcedure(reporter: TestReporter): Unit = {
     config = StackConfig.Default
     startOutstation()
