@@ -729,6 +729,7 @@ class OpenDNP3IntegrationPlugin extends IntegrationPlugin {
     dnp3Config.linkConfig.useConfirms = config.linkConfig.useConfirms
     dnp3Config.linkConfig.numRetry = config.linkConfig.numRetry
     dnp3Config.linkConfig.responseTimeout = Duration.ofMillis(config.linkConfig.timeoutMs)
+    dnp3Config.linkConfig.keepAliveTimeout = Duration.ofDays(30)
 
     // Outstation config
     dnp3Config.outstationConfig.solConfirmTimeout = Duration.ofMillis(config.outstationConfig.responseTimeoutMs)
