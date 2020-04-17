@@ -2,7 +2,7 @@ package com.automatak.dnp4sopendnp3
 
 import java.util.concurrent.ConcurrentLinkedDeque
 
-import com.automatak.dnp3.enums.{AnalogQuality, CommandStatus, ControlCode, OperateType}
+import com.automatak.dnp3.enums.{AnalogQuality, CommandStatus, OperateType, OperationType, TripCloseCode}
 import com.automatak.dnp3.{AnalogOutputDouble64, AnalogOutputFloat32, AnalogOutputInt16, AnalogOutputInt32, AnalogOutputStatus, CommandHandler, ControlRelayOutputBlock, Database, Flags, Outstation, OutstationChangeSet}
 
 class QueuedCommandHandler(val app: CustomOutstationApplication, val binaryOutputsDisabled: Boolean, val analogOutputsDisabled: Boolean) extends CommandHandler {
@@ -120,15 +120,19 @@ class QueuedCommandHandler(val app: CustomOutstationApplication, val binaryOutpu
 
     val result = index match {
       case 0 =>
-        if(crob.function == ControlCode.LATCH_ON &&
-           crob.count == 1 &&
-           crob.onTimeMs == 100 &&
-           crob.offTimeMs == 200) {
+        if(crob.opType == OperationType.LATCH_ON &&
+          crob.tcc == TripCloseCode.NUL &&
+          !crob.clear &&
+          crob.count == 1 &&
+          crob.onTimeMs == 100 &&
+          crob.offTimeMs == 200) {
           CommandStatus.SUCCESS
         }
         else CommandStatus.FORMAT_ERROR
       case 1 =>
-        if(crob.function == ControlCode.TRIP_PULSE_ON &&
+        if(crob.opType == OperationType.PULSE_ON &&
+          crob.tcc == TripCloseCode.TRIP &&
+          !crob.clear &&
           crob.count == 5 &&
           crob.onTimeMs == 300 &&
           crob.offTimeMs == 400) {
@@ -136,7 +140,9 @@ class QueuedCommandHandler(val app: CustomOutstationApplication, val binaryOutpu
         }
         else CommandStatus.FORMAT_ERROR
       case 2 =>
-        if((crob.function == ControlCode.LATCH_ON || crob.function == ControlCode.LATCH_OFF) &&
+        if((crob.opType == OperationType.LATCH_ON || crob.opType == OperationType.LATCH_OFF) &&
+          crob.tcc == TripCloseCode.NUL &&
+          !crob.clear &&
           crob.count == 10 &&
           crob.onTimeMs == 500 &&
           crob.offTimeMs == 600) {
@@ -144,7 +150,9 @@ class QueuedCommandHandler(val app: CustomOutstationApplication, val binaryOutpu
         }
         else CommandStatus.FORMAT_ERROR
       case 3 =>
-        if((crob.function == ControlCode.TRIP_PULSE_ON || crob.function == ControlCode.CLOSE_PULSE_ON) &&
+        if(crob.opType == OperationType.PULSE_ON &&
+          (crob.tcc == TripCloseCode.TRIP || crob.tcc == TripCloseCode.CLOSE ) &&
+          !crob.clear &&
           crob.count == 15 &&
           crob.onTimeMs == 700 &&
           crob.offTimeMs == 800) {
@@ -152,7 +160,8 @@ class QueuedCommandHandler(val app: CustomOutstationApplication, val binaryOutpu
         }
         else CommandStatus.FORMAT_ERROR
       case 4 =>
-        if((crob.function == ControlCode.LATCH_ON || crob.function == ControlCode.LATCH_OFF || crob.function == ControlCode.TRIP_PULSE_ON || crob.function == ControlCode.CLOSE_PULSE_ON) &&
+        if(((crob.opType == OperationType.LATCH_ON && crob.tcc == TripCloseCode.NUL) || (crob.opType == OperationType.LATCH_OFF && crob.tcc == TripCloseCode.NUL) || (crob.opType == OperationType.PULSE_ON && crob.tcc == TripCloseCode.TRIP) || (crob.opType == OperationType.PULSE_ON && crob.tcc == TripCloseCode.CLOSE)) &&
+          !crob.clear &&
           crob.count == 20 &&
           crob.onTimeMs == 900 &&
           crob.offTimeMs == 1000) {
@@ -160,7 +169,9 @@ class QueuedCommandHandler(val app: CustomOutstationApplication, val binaryOutpu
         }
         else CommandStatus.FORMAT_ERROR
       case 5 =>
-        if(crob.function == ControlCode.PULSE_ON &&
+        if(crob.opType == OperationType.PULSE_ON &&
+          crob.tcc == TripCloseCode.NUL &&
+          !crob.clear &&
           crob.count == 25 &&
           crob.onTimeMs == 1100 &&
           crob.offTimeMs == 1200) {
@@ -168,7 +179,9 @@ class QueuedCommandHandler(val app: CustomOutstationApplication, val binaryOutpu
         }
         else CommandStatus.FORMAT_ERROR
       case 6 =>
-        if(crob.function == ControlCode.LATCH_ON &&
+        if(crob.opType == OperationType.LATCH_ON &&
+          crob.tcc == TripCloseCode.NUL &&
+          !crob.clear &&
           crob.count == 30 &&
           crob.onTimeMs == 1300 &&
           crob.offTimeMs == 1400) {
@@ -176,7 +189,9 @@ class QueuedCommandHandler(val app: CustomOutstationApplication, val binaryOutpu
         }
         else CommandStatus.FORMAT_ERROR
       case 7 =>
-        if(crob.function == ControlCode.LATCH_OFF &&
+        if(crob.opType == OperationType.LATCH_OFF &&
+          crob.tcc == TripCloseCode.NUL &&
+          !crob.clear &&
           crob.count == 35 &&
           crob.onTimeMs == 1500 &&
           crob.offTimeMs == 1600) {
@@ -184,7 +199,9 @@ class QueuedCommandHandler(val app: CustomOutstationApplication, val binaryOutpu
         }
         else CommandStatus.FORMAT_ERROR
       case 8 =>
-        if(crob.function == ControlCode.CLOSE_PULSE_ON &&
+        if(crob.opType == OperationType.PULSE_ON &&
+          crob.tcc == TripCloseCode.CLOSE &&
+          !crob.clear &&
           crob.count == 40 &&
           crob.onTimeMs == 1700 &&
           crob.offTimeMs == 1800) {
@@ -192,7 +209,9 @@ class QueuedCommandHandler(val app: CustomOutstationApplication, val binaryOutpu
         }
         else CommandStatus.FORMAT_ERROR
       case 9 =>
-        if(crob.function == ControlCode.TRIP_PULSE_ON &&
+        if(crob.opType == OperationType.PULSE_ON &&
+          crob.tcc == TripCloseCode.TRIP &&
+          !crob.clear &&
           crob.count == 45 &&
           crob.onTimeMs == 1900 &&
           crob.offTimeMs == 2000) {
@@ -200,7 +219,9 @@ class QueuedCommandHandler(val app: CustomOutstationApplication, val binaryOutpu
         }
         else CommandStatus.FORMAT_ERROR
       case i if i >= 10 && i <= 19 =>
-        if(crob.function == ControlCode.LATCH_ON &&
+        if(crob.opType == OperationType.LATCH_ON &&
+          crob.tcc == TripCloseCode.NUL &&
+          !crob.clear &&
           crob.count == 1 &&
           crob.onTimeMs == 100 &&
           crob.offTimeMs == 200) {
