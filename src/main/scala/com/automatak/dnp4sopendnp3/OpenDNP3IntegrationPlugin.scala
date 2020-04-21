@@ -38,8 +38,9 @@ class OpenDNP3IntegrationPlugin extends IntegrationPlugin {
   }
 
   override def setLinkLayerConfirm(reporter: TestReporter, value: Boolean): Unit = {
-    config = config.copy(linkConfig = config.linkConfig.copy(useConfirms = value))
-    cyclePower(reporter)
+    if(value) {
+      throw new RuntimeException("Confirmed link-layer is not supported by OpenDNP3")
+    }
   }
 
   override def setSelfAddressSupport(reporter: TestReporter, value: Boolean): Unit = {
@@ -726,8 +727,6 @@ class OpenDNP3IntegrationPlugin extends IntegrationPlugin {
     // Link-layer config
     dnp3Config.linkConfig.localAddr = config.linkConfig.source
     dnp3Config.linkConfig.remoteAddr = config.linkConfig.destination
-    dnp3Config.linkConfig.useConfirms = config.linkConfig.useConfirms
-    dnp3Config.linkConfig.numRetry = config.linkConfig.numRetry
     dnp3Config.linkConfig.responseTimeout = Duration.ofMillis(config.linkConfig.timeoutMs)
     dnp3Config.linkConfig.keepAliveTimeout = Duration.ofDays(30)
 
