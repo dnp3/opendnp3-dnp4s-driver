@@ -10,7 +10,7 @@ case class OutstationConfig(responseTimeoutMs: Int, selectTimeoutMs: Int, fragme
 
 case class UnsolicitedResponseConfig(allowUnsolicited: Boolean, unsolConfirmTimeoutMs: Int, maxNumRetries: NumRetries)
 
-case class TestDatabaseConfig(disableBinaryInputs: Boolean, disableDoubleBitBinaryInputs: Boolean, disableCounters: Boolean, isLocalControl: Boolean)
+case class TestDatabaseConfig(disableBinaryInputs: Boolean, disableDoubleBitBinaryInputs: Boolean, disableCounters: Boolean, isGlobalLocalControl: Boolean, isSingleLocalControl: Boolean)
 
 case class CommandHandlerConfig(disableBinaryOutput: Boolean, disableAnalogOutput: Boolean)
 
@@ -22,7 +22,7 @@ object StackConfig {
     LinkConfig(1024, 1, 1000),
     OutstationConfig(2000, 2000, 2048, 4),
     UnsolicitedResponseConfig(false, 5000, NumRetries.Infinite()),
-    TestDatabaseConfig(false, false, false, false),
+    TestDatabaseConfig(false, false, false, false, false),
     CommandHandlerConfig(false, false)
   )
 }

@@ -6,7 +6,6 @@ import com.automatak.dnp4s.dnp3.app.EventClass
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
-import scala.util.Random
 
 sealed trait BatchSpecifier
 object BatchSpecifier {
@@ -41,43 +40,25 @@ class TypedEvent[T](val idx: Int, val batch: Int, val eventClass: EventClass, va
 class TrackingDatabase(val app: CustomOutstationApplication) {
   private var outstation: Outstation = null
 
+  private val binaryPoints = mutable.SortedMap((for (i <- 0 to 9) yield i -> new BinaryInput(false, new Flags(0x01), app.now())): _*)
+  private val doubleBitPoints = mutable.SortedMap((for (i <- 0 to 9) yield i -> new DoubleBitBinaryInput(DoubleBit.DETERMINED_OFF, new Flags(0x41), app.now())): _*)
+  private val counters = mutable.SortedMap((for (i <- 0 to 9) yield i -> new Counter(0, new Flags(0x01), app.now())): _*)
+  private val analogInputs = mutable.SortedMap((for (i <- 0 to 9) yield i -> new AnalogInput(0.0, new Flags(0x01), app.now())): _*)
+
+  private val binaryOutputs = mutable.SortedMap((for (i <- 0 to 19) yield i -> new BinaryOutputStatus(false, new Flags(0x01), app.now())): _*)
+  private val analogOutputs = mutable.SortedMap((for (i <- 0 to 19) yield i -> new AnalogOutputStatus(0.0, new Flags(0x01), app.now())): _*)
+
   private val events: ArrayBuffer[Event] = ArrayBuffer()
-  private val binaryPoints = mutable.Map(
-    0 -> new BinaryInput(false, new Flags(0x01), app.now()),
-    41 -> new BinaryInput(false, new Flags(0x01), app.now()),
-    1024 -> new BinaryInput(false, new Flags(0x01), app.now()),
-    65535 -> new BinaryInput(false, new Flags(0x01), app.now())
-  )
-
-  private val doubleBitPoints = mutable.Map(
-    0 -> new DoubleBitBinaryInput(DoubleBit.DETERMINED_OFF, new Flags(0x41), app.now()),
-    41 -> new DoubleBitBinaryInput(DoubleBit.DETERMINED_ON, new Flags(0x81.toByte), app.now()),
-    1024 -> new DoubleBitBinaryInput(DoubleBit.DETERMINED_OFF, new Flags(0x41), app.now()),
-    65535 -> new DoubleBitBinaryInput(DoubleBit.DETERMINED_ON, new Flags(0x81.toByte), app.now())
-  )
-
-  private val counters = mutable.Map(
-    0 -> new Counter(1, new Flags(0x01), app.now()),
-    41 -> new Counter(1, new Flags(0x01), app.now()),
-    1024 -> new Counter(1, new Flags(0x01), app.now()),
-    65535 -> new Counter(1, new Flags(0x01), app.now())
-  )
-
-  private val analogInputs = mutable.Map(
-    0 -> new AnalogInput(0.0, new Flags(0x01), app.now()),
-    41 -> new AnalogInput(0.0, new Flags(0x01), app.now()),
-    1024 -> new AnalogInput(0.0, new Flags(0x01), app.now()),
-    65535 -> new AnalogInput(0.0, new Flags(0x01), app.now())
-  )
-
-  private val binaryOutputs = mutable.Map((for (i <- 0 to 19) yield i -> new BinaryOutputStatus(false, new Flags(0x01), app.now())): _*)
-
-  private val analogOutputs = mutable.Map((for (i <- 0 to 19) yield i -> new AnalogOutputStatus(0.0, new Flags(0x01), app.now())): _*)
-
-  private var recordedCounterValues: mutable.Map[Int, Counter] = mutable.Map()
+  private var recordedCounterValues: mutable.SortedMap[Int, Counter] = mutable.SortedMap()
 
   def getConfig(testDatabaseConfig: TestDatabaseConfig): DatabaseConfig = {
-    if(testDatabaseConfig.isLocalControl) {
+    if(testDatabaseConfig.isGlobalLocalControl) {
+      this.binaryOutputs.foreach(originalPoint => {
+        this.binaryOutputs(originalPoint._1) = new BinaryOutputStatus(originalPoint._2.value, new Flags(0x11), originalPoint._2.timestamp)
+      })
+    }
+
+    if(testDatabaseConfig.isSingleLocalControl) {
       val originalPoint = this.binaryOutputs(0)
       val newPoint = new BinaryOutputStatus(originalPoint.value, new Flags(0x11), originalPoint.timestamp)
       this.binaryOutputs(0) = newPoint
@@ -153,8 +134,7 @@ class TrackingDatabase(val app: CustomOutstationApplication) {
     this.outstation.apply(changeset)
   }
 
-  def generateBinaryInputEvent(eventBatch: Int): TypedEvent[BinaryInput] = {
-    val idx = binaryPoints.keySet.toList(new Random().nextInt(binaryPoints.size))
+  def generateBinaryInputEvent(idx: Int, eventBatch: Int): TypedEvent[BinaryInput] = {
     val value = !binaryPoints(idx).value
     val flags = if(value) 0x81.toByte else 0x01.toByte
     val newPoint = new BinaryInput(value, new Flags(flags), app.now())
@@ -170,8 +150,7 @@ class TrackingDatabase(val app: CustomOutstationApplication) {
     newEvent
   }
 
-  def generateDoubleBitBinaryInputEvent(eventBatch: Int): TypedEvent[DoubleBitBinaryInput] = {
-    val idx = doubleBitPoints.keySet.toList(new Random().nextInt(doubleBitPoints.size))
+  def generateDoubleBitBinaryInputEvent(idx: Int, eventBatch: Int): TypedEvent[DoubleBitBinaryInput] = {
     val value = if (doubleBitPoints(idx).value == DoubleBit.DETERMINED_OFF) DoubleBit.DETERMINED_ON else DoubleBit.DETERMINED_OFF
     val flags = if (value == DoubleBit.DETERMINED_OFF) 0x41.toByte else 0x81.toByte
     val newPoint = new DoubleBitBinaryInput(value, new Flags(flags), app.now())
@@ -187,8 +166,7 @@ class TrackingDatabase(val app: CustomOutstationApplication) {
     newEvent
   }
 
-  def generateCounterEvent(eventBatch: Int): TypedEvent[Counter] = {
-    val idx = counters.keySet.toList(new Random().nextInt(counters.size))
+  def generateCounterEvent(idx: Int, eventBatch: Int): TypedEvent[Counter] = {
     val value = counters(idx).value + 1
     val newPoint = new Counter(value, new Flags(0x01), app.now())
 
@@ -207,8 +185,7 @@ class TrackingDatabase(val app: CustomOutstationApplication) {
     this.recordedCounterValues = this.counters.clone()
   }
 
-  def generateAnalogInputEvent(eventBatch: Int): TypedEvent[AnalogInput] = {
-    val idx = analogInputs.keySet.toList(new Random().nextInt(analogInputs.size))
+  def generateAnalogInputEvent(idx: Int, eventBatch: Int): TypedEvent[AnalogInput] = {
     val value = analogInputs(idx).value + 100.0
     val newPoint = new AnalogInput(value, new Flags(0x01), app.now())
 
@@ -232,7 +209,7 @@ class TrackingDatabase(val app: CustomOutstationApplication) {
       getAllBinaryInputs.map(e => e.asInstanceOf[Event]).toList :::
       (if (!isClass0) getAllDoubleBitBinaryInputs.map(_.asInstanceOf[Event]).toList else Nil) :::
       getAllCounters.map(_.asInstanceOf[Event]).toList :::
-      getAllCounters.map(e => new TypedEvent[FrozenCounter](e.idx, e.batch, EventClass.All, new FrozenCounter(1, e.value.quality, e.value.timestamp)).asInstanceOf[Event]).toList :::
+      getAllCounters.map(e => new TypedEvent[FrozenCounter](e.idx, e.batch, EventClass.All, new FrozenCounter(0, e.value.quality, e.value.timestamp)).asInstanceOf[Event]).toList :::
       getAllAnalogInputs.map(_.asInstanceOf[Event]).toList :::
       this.binaryOutputs.map(e => new TypedEvent[BinaryOutputStatus](e._1, 0, EventClass.All, e._2).asInstanceOf[Event]).toList :::
       this.analogOutputs.map(e => new TypedEvent[AnalogOutputStatus](e._1, 0, EventClass.All, e._2).asInstanceOf[Event]).toList
