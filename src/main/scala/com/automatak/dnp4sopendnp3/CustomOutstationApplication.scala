@@ -37,6 +37,8 @@ class CustomOutstationApplication(val isLocalControl: Boolean) extends Outstatio
 
   override def warmRestart(): Int = 65535
 
+  override def onConfirmProcessed(isUnsolicited: Boolean, numClass1: Long, numClass2: Long, numClass3: Long): Unit = {}
+
   override def now(): DNPTime = {
     val time = this.lastTimestamp.plus(Duration.between(this.lastUpdate, Instant.now))
     val quality = if (isTimeValid) TimestampQuality.SYNCHRONIZED else TimestampQuality.UNSYNCHRONIZED
